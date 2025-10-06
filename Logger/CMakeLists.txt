@@ -1,4 +1,5 @@
 set(TARGET_NAME Logger)
+
 add_library(${TARGET_NAME} SHARED
 	src/Logger.cpp
 )
