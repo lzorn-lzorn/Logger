@@ -5,6 +5,7 @@
 #include <deque>
 #include <filesystem>
 #include <chrono>
+#include <iostream>
 #include <thread>
 #include <condition_variable>
 #include <atomic>
@@ -19,12 +20,21 @@ namespace Log {
 * @brief 每一个日志文件的记录信息
 */
 class Logger {
+public:
+	Logger() = default;
+	Logger (const Logger&) = delete;
+	Logger& operator=(const Logger&) = delete;
+	Logger(Logger&&) = default;
+	Logger& operator=(Logger&&) = default;
+	virtual ~Logger() = default;
+public:
+
+	virtual void Log(const Message& msg) noexcept;
+	virtual void Log(const std::ostream& os, const Message& msg) noexcept;
 private:
 	std::chrono::system_clock::time_point creation_time;
 	std::filesystem::path log_path;
 	std::string file_name;
-	Buffer<LogBufferSize> buffer;
-
 };
 
 class ConsoleLogger : public Logger {};
