@@ -2,14 +2,16 @@
 
 namespace Log {
 enum class Level {
-	Debug = 0,
-	Info = 1,
-	Warning = 2,
-	Error = 3,
-	Fatal = 4
+    None = 0,
+	Debug = 1,
+	Info = 2,
+	Warning = 3,
+	Error = 4,
+	Fatal = 5
 };
 inline constexpr const char* LevelToString(Level level) noexcept {
     switch (level) {
+        case Level::None:    return "";
         case Level::Debug:   return "[Debug]";
         case Level::Info:    return "[Info]";
         case Level::Warning: return "[Warning]";
