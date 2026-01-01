@@ -9,20 +9,22 @@
 namespace Report {
     static inline std::atomic<unsigned long long> report_uid = 0;
     enum class Level {
-        Info = 0,
-        Warning = 1,
-        Error = 2,
-        Fatal = 3,
+        Temp,    // 临时等级(无指定颜色), 不会被输出到文件中
+        Info,    // 普通信息(蓝色)
+        Warning, // 警告信息(黄色)
+        Error,   // 错误信息(橙色)
+        Fatal,   // 致命错误信息(红色), 会直接终止程序
     };
     static std::string LevelToString(const Level level) {
         std::string result;
 
         switch (level) {
+            case Level::Temp: result = "[Temp]"; break;
             case Level::Info: result = "[Info]"; break;
             case Level::Warning: result = "[Warning]"; break;
             case Level::Error: result = "[Error]"; break;
             case Level::Fatal: result = "[Fatal]"; break;
-            default: result = "[Unknown]"; break;
+            default: result = "[Temp]"; break;
         }
         return result;
     }
@@ -33,8 +35,8 @@ namespace Report {
         Message() = default;
         Message(const Message& message) : m_msg(message.GetRawMessage()), m_level(message.GetLevel()) {}
         Message(Message&& message) noexcept : m_msg(std::move(message.GetRawMessage())), m_level(message.GetLevel()) {}
-        Message(const std::string& message, const Level level = Level::Info) : m_msg(message), m_level(level) {}
-        Message(std::string&& message, const Level level = Level::Info) : m_msg(std::move(message)), m_level(level) {}
+        explicit Message(const std::string& message, const Level level = Level::Info) : m_msg(message), m_level(level) {}
+        explicit Message(std::string&& message, const Level level = Level::Info) : m_msg(std::move(message)), m_level(level) {}
 
         Message& operator=(const Message& message) {
             m_msg = message.GetRawMessage();
@@ -64,6 +66,7 @@ namespace Report {
             // todo: 之后可以专门封装一个 ColorWapper(std::string text, int r, int g, int b) 来支持不同终端中的颜色显示
             if (type == OutType::Console) {
                 switch (m_level) {
+                    case Level::Temp: /* 没有颜色, 不做任何设置*/                                break;
                     case Level::Info: prefix = "\033[38;2;0;122;255m " + prefix + "\033[0m:   "; break;   // Dodger Blue
                     case Level::Warning: prefix = "\033[38;2;255;204;0m " + prefix + "\033[0m:"; break;   // Gold
                     case Level::Error: prefix = "\033[38;2;255;165;0m " + prefix + "\033[0m:  "; break;   // Orange Red
@@ -77,8 +80,9 @@ namespace Report {
         void SetRawMessage(const std::string &message) { m_msg = message; }
         void SetCatalogue(const size_t uid) { m_catalogue_uid = uid; }
         void SetUID(const size_t uid) { m_uid = uid; }
-        size_t GetCatalogue() const { return m_uid; }
-        size_t GetUID() const { return m_catalogue_uid; }
+        [[nodiscard]] size_t GetCatalogue() const { return m_uid; }
+        [[nodiscard]] size_t GetUID() const { return m_catalogue_uid; }
+        bool IsNeedWriteToFile() const { return m_level != Level::Temp; }
     private:
         std::string m_msg { "" };
         Level m_level { Level::Info };
@@ -99,22 +103,18 @@ namespace Report {
         static constexpr std::format_string<size_t> DefaultLogFileNameFormat = "Log_Buffer_{}.log";
     public:
         Buffer() : m_uid(report_uid++) {
-            m_is_write_to_file = true;
             m_file_path = std::filesystem::current_path() / std::format(DefaultLogFileNameFormat, std::move(m_uid));
             m_file_stream.open(m_file_path, std::ios::out | std::ios::app);
             if (!m_file_stream.is_open()) {
-                m_is_write_to_file = false;
                 Message err_msg = MakeMessage(Level::Error, "Buffer_{} failed to open log file: {}", m_uid, m_file_path.string());
                 m_messages.push_back(std::move(err_msg));
             }
         };
     private:
-        std::atomic<bool> m_is_write_to_file { true };
         size_t m_uid { 0 };
         std::filesystem::path m_file_path {};
         std::fstream m_file_stream {};
         std::deque<Message> m_messages {};
-
     };
     void Write(Level level, Buffer& buffer, const std::string& message);
 
