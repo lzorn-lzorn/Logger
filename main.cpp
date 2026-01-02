@@ -14,5 +14,7 @@ int main() {
     Report::Buffer log_buffer;
     Report::Buffer log_buffer1;
     Report::Buffer log_buffer2;
+
+    log_buffer.Push("Hello World!", Report::Level::Info);
     return 0;
 }
