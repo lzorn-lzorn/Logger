@@ -6,10 +6,10 @@ int main() {
     Report::Message msg2("This is a warning message.", Report::Level::Warning);
     Report::Message msg3("This is an error message.", Report::Level::Error);
     Report::Message msg4("This is a fatal message.", Report::Level::Fatal);
-    std::cout << msg1.GetMessage(Report::Message::OutType::Console);
-    std::cout << msg2.GetMessage(Report::Message::OutType::Console);
-    std::cout << msg3.GetMessage(Report::Message::OutType::Console);
-    std::cout << msg4.GetMessage(Report::Message::OutType::Console);
+    Report::PrintMessageToConsole(msg1);
+    Report::PrintMessageToConsole(msg2);
+    Report::PrintMessageToConsole(msg3);
+    Report::PrintMessageToConsole(msg4);
 
     Report::Buffer log_buffer;
     Report::Buffer log_buffer1;

@@ -6,6 +6,7 @@
 #include <fstream>
 #include <deque>
 #include <mutex>
+#include <print>
 
 namespace Report {
     static inline std::atomic<unsigned long long> report_uid = 0;
@@ -100,6 +101,16 @@ namespace Report {
         return MakeMessage(std::format(fmt, std::forward<Args>(args)...), level);
     }
 
+    inline void PrintMessageToConsole(const Message& msg) {
+        std::print("{}", msg.GetMessage(Report::Message::OutType::Console));
+    }
+
+    inline void PrintMessageToFile(const Message& msg, std::fstream& file_stream) {
+        if (file_stream.is_open()) {
+            file_stream << msg.GetMessage();
+        }
+    }
+
     struct Buffer {
     public:
         static constexpr std::format_string<size_t> DefaultLogFileNameFormat = "Log_Buffer_{}.log";
@@ -139,10 +150,8 @@ namespace Report {
     public:
         void Push(const Message& msg) {
             std::unique_lock ulock(m_mutex);
-            m_messages.push_back(msg);
-            if (m_file_stream.is_open()) {
-                m_file_stream << msg.GetMessage();
-            }
+            m_messages.push_front(msg);
+            PrintMessageToFile(msg, m_file_stream);
         }
 
         void Push(const std::string &msg, const Level level = Level::Info) {
@@ -153,12 +162,20 @@ namespace Report {
             Push(Message(std::string(msg), level));
         }
 
-        [[nodiscard]] const Message& Pop() const {
-            return m_messages.front();
+        Message Pop() {
+            if (m_messages.empty()) throw std::out_of_range("Buffer is empty");
+            Message msg = m_messages.back();
+            {
+                std::unique_lock ulock(m_mutex);
+                PrintMessageToFile(msg, m_file_stream);
+                m_messages.pop_back();
+            }
+            return msg;
         }
 
         [[nodiscard]] Message Top() {
-            return m_messages.front();
+            if (m_messages.empty()) throw std::out_of_range("Buffer is empty");
+            return m_messages.back();
         }
 
         Message& operator[](const size_t index) noexcept {
@@ -190,5 +207,10 @@ namespace Report {
     template <typename... Args>
     static void Write(const Level level, Buffer& buffer, const std::format_string<Args...> format, Args&&... args) {;
         Write(level, buffer, std::vformat(format, std::make_format_args(std::forward<Args>(args)...)));
+    }
+
+    static Message Read(Buffer& buffer) {
+        Message msg = buffer.Pop();
+        return msg;
     }
 }
