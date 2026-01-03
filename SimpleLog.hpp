@@ -10,13 +10,13 @@
 #include <print>
 #include <chrono>
 #include <optional>
+#include <cstdio>
 
 
 #define STRINGIZE_DETAIL(x) #x
 #define STRINGIZE(x) STRINGIZE_DETAIL(x)
 #define DO_PRAGMA(x) _Pragma(#x)
-#define WARN_MSG(msg) DO_PRAGMA(message (__FILE__ ":" STRINGIZE(__LINE__) " WARNING: " msg))
-
+#define WARN_MSG(msg) DO_PRAGMA(message (__FILE__ ":" STRINGIZE(__LINE__) " WARNING: " msg)
 
 namespace Report {
     using namespace std::chrono;
@@ -107,8 +107,8 @@ namespace Report {
             // todo: 之后可以专门封装一个 ColorWrapper(std::string text, int r, int g, int b) 来支持不同终端中的颜色显示
             if (type == OutType::Console) {
                 switch (m_level) {
-                    case Level::Temp: /* 没有颜色, 不做任何设置*/                              ; break;
-                    case Level::None: /* 没有颜色, 不做任何设置*/                              ; break;
+                    case Level::Temp: (void)0 /* 没有颜色, 不做任何设置*/                      ;
+                    case Level::None: (void)0 /* 没有颜色, 不做任何设置*/                      ; break;
                     case Level::Info: prefix = "\033[38;2;0;122;255m " + prefix + "\033[0m:   "; break;   // Dodger Blue
                     case Level::Warning: prefix = "\033[38;2;255;204;0m " + prefix + "\033[0m:"; break;   // Gold
                     case Level::Error: prefix = "\033[38;2;255;165;0m " + prefix + "\033[0m:  "; break;   // Orange Red
@@ -117,18 +117,19 @@ namespace Report {
 
             }else {
                 switch (m_level) {
-                    case Level::Temp: /* 没有颜色 */          ; break;
-                    case Level::Info: prefix = prefix + ":   "; break;   // Dodger Blue
-                    case Level::Warning: prefix = prefix + ":"; break;   // Gold
-                    case Level::Error: prefix = prefix + ":  "; break;   // Orange Red
-                    case Level::Fatal: prefix = prefix + ":  "; break;   // Crimson
-                    case Level::None: prefix = prefix + ":"   ; break;   // Crimson
+                    case Level::Temp:                         ;
+                    case Level::Info: prefix = prefix + ":   "; break;
+                    case Level::Warning: prefix = prefix + ":"; break;
+                    case Level::Error:                        ;
+                    case Level::Fatal: prefix = prefix + ":  "; break;
+                    case Level::None: prefix = prefix + ":"   ; break;
                 }
             }
             std::string formatted_msg = prefix + m_msg + "\n";
             return formatted_msg;
         }
         [[nodiscard]] Level GetLevel() const { return m_level; }
+        [[nodiscard]] unsigned long long Bytes() const { return GetMessage().size(); }
         void SetMessage(const std::string &message, const Level level = Level::Info) {
             m_msg = message;
             m_level = level;
@@ -142,7 +143,7 @@ namespace Report {
         }
         // 获取该信息的毫秒级时间戳
         [[nodiscard]] long long GetMilliSecondTimeStamp(const size_t uid) const {
-            return duration_cast<milliseconds>(m_time.time_since_epoch()).count();;
+            return duration_cast<milliseconds>(m_time.time_since_epoch()).count();
         }
         [[nodiscard]] size_t GetCatalogue() const { return m_uid; }
         [[nodiscard]] unsigned long long GetUID() const { return m_catalogue_uid; }
@@ -156,7 +157,7 @@ namespace Report {
         system_clock::time_point m_time { system_clock::now() };
     };
 
-    inline Message MakeMessage(const std::string& message, Level level = Level::Info) {
+    inline Message MakeMessage(const std::string& message, const Level level = Level::Info) {
         return Message(message, level);
     }
 
@@ -176,7 +177,7 @@ namespace Report {
     }
     /*
      * @brief：从文件中读取并删除最后一行（保留 Buffer 中的 file_stream 打开状态）
-     * @note：函数会先 flush 传入的 file_stream，然后用独立的 ifstream 读取并截断文件。
+     * @note：函数会先 flush 传入的 file_stream。
      *       返回的 Message 的 level 会基于文件行前缀自动推断（例如 "[Info]"、"[Warning]" 等），
      *       并把行前缀（例如 "[Info]:   "）从返回内容中剥离，仅返回纯消息文本。
      */
